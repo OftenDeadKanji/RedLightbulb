@@ -147,6 +147,8 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\Render\General\Instance\Instance.hpp" />
+    <ClInclude Include="src\Render\OpenGL\ShadingModels\ShadingModelRendererOpenGL.hpp" />
     <ClInclude Include="src\Render\General\ShadingModels\ShadingModelRenderer.hpp" />
     <ClInclude Include="src\ResourceManagers\MaterialManager\MaterialManager.hpp" />
     <ClInclude Include="src\Render\OpenGL\ShadingModels\LitShadingModelOpenGL.hpp" />
@@ -196,6 +198,7 @@
     <ClInclude Include="src\ResourceManagers\TextureManager\TextureManager.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Render\OpenGL\ShadingModels\ShadingModelRendererOpenGL.cpp" />
     <ClCompile Include="src\Render\General\ShadingModels\ShadingModelRenderer.cpp" />
     <ClCompile Include="src\ResourceManagers\MaterialManager\MaterialManager.cpp" />
     <ClCompile Include="src\Render\OpenGL\ShadingModels\LitShadingModelOpenGL.cpp" />

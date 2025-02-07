@@ -21,8 +21,7 @@ namespace RedLightbulb
 
 		bool m_isInitialized = false;
 
-		ShaderOpenGL m_shader;
-		std::vector<std::pair<PerMesh*, VAO>> m_buffers;
+		//ShaderOpenGL m_shader;
 
 		struct MaterialUniform
 		{

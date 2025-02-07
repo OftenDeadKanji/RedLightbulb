@@ -7,6 +7,9 @@
 #define rCast(type, value) reinterpret_cast<type>(value)
 
 template<typename T>
+using rPtr = T*;
+
+template<typename T>
 using uPtr = std::unique_ptr<T>;
 
 template<typename T>

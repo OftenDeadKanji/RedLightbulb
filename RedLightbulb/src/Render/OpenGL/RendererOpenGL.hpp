@@ -18,7 +18,8 @@ namespace RedLightbulb
 
 		void render(float deltaTime, const Camera& camera) override;
 
-		//void addUnlitMesh(UnlitShadingModelOpenGL::);
+		void SetBoundShader(ShaderOpenGL* Shader);
+		ShaderOpenGL* GetBoundShader() const;
 	private:
 		void createContext();
 		void initClearColors();
@@ -26,6 +27,8 @@ namespace RedLightbulb
 		void clearBuffers();
 
 		HGLRC m_context;
+
+		ShaderOpenGL* CurrentlyBoundShader {};
 
 		struct
 		{

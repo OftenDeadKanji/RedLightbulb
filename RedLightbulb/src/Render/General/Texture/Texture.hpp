@@ -9,6 +9,8 @@ namespace RedLightbulb
 	public:
 		explicit Texture(TextureType type);
 
+		virtual void setToSlot(int slot, const std::string& name) const = 0;
+
 	protected:
 		TextureType m_type;
 	};

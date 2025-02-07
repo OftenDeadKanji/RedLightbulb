@@ -17,7 +17,7 @@ namespace RedLightbulb
 		void bind();
 		void unbind();
 
-		void setToSlot(int slot, const ShaderOpenGL& shader, const std::string& name) const;
+		void setToSlot(int slot, const std::string& name) const override;
 
 	private:
 		GLuint m_id = 0;

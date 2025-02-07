@@ -9,9 +9,6 @@ namespace RedLightbulb
 
 	void UnlitShadingModel::destroy()
 	{}
-
-	void UnlitShadingModel::render(const Camera& camera)
-	{}
 	
 	std::shared_ptr<MaterialUnlit> UnlitShadingModel::castToAppropriateMaterial(std::shared_ptr<Material> material)
 	{

@@ -2,6 +2,8 @@
 #include "ShaderOpenGL.hpp"
 #include <fstream>
 #include "../../../Utilities/Utilities.hpp"
+#include "Render/General/Color/Color.hpp"
+#include "Render/OpenGL/RendererOpenGL.hpp"
 
 namespace RedLightbulb
 {
@@ -82,6 +84,8 @@ namespace RedLightbulb
 	void ShaderOpenGL::bind()
 	{
 		glUseProgram(m_id);
+
+		sCast(RendererOpenGL&, RendererOpenGL::getInstance()).SetBoundShader(this);
 	}
 
 	void ShaderOpenGL::setInt(int value, const std::string& name) const

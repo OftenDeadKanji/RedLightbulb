@@ -2,8 +2,6 @@
 #include "RendererOpenGL.hpp"
 #include "../../Config/OSInfo.hpp"
 
-#include <iostream>
-
 #include "../../Dependencies/glad/glad/wgl.h"
 #include "../../Dependencies/glad/glad/gl.h"
 
@@ -54,6 +52,16 @@ namespace RedLightbulb
 		
 		m_unlitShadingModels->render(camera);
 		m_litShadingModels->render(camera);
+	}
+
+	void RendererOpenGL::SetBoundShader(ShaderOpenGL* Shader)
+	{
+		CurrentlyBoundShader = Shader;
+	}
+
+	ShaderOpenGL* RendererOpenGL::GetBoundShader() const
+	{
+		return CurrentlyBoundShader;
 	}
 
 	void RendererOpenGL::createContext()

@@ -17,7 +17,6 @@ namespace RedLightbulb
 		virtual void create() override;
 		virtual void destroy() override;
 
-		virtual void render(const Camera& camera) override;
 	private:
 		virtual sPtr<MaterialLit> castToAppropriateMaterial(sPtr<Material> material) override;
 	};

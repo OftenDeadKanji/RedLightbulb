@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "TextureOpenGL.hpp"
 #include "../Shader/ShaderOpenGL.hpp"
+#include "Render/OpenGL/RendererOpenGL.hpp"
 
 namespace RedLightbulb
 {
@@ -54,11 +55,13 @@ namespace RedLightbulb
 	{
 		glBindTexture(m_glType, 0);
 	}
-	void TextureOpenGL::setToSlot(int slot, const ShaderOpenGL& shader, const std::string& name) const
+	void TextureOpenGL::setToSlot(int slot, const std::string& name) const
 	{
 		glActiveTexture(GL_TEXTURE0 + slot);
 		glBindTexture(m_glType, m_id);
 
-		shader.setInt(slot, name);
+		auto* shader = sCast(RendererOpenGL&, RendererOpenGL::getInstance()).GetBoundShader();
+
+		shader->setInt(slot, name);
 	}
 }

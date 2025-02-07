@@ -17,14 +17,22 @@ namespace RedLightbulb
 		virtual void create() override;
 		virtual void destroy() override;
 
-		virtual void render(const Camera& camera) override;
 	private:
 		virtual void createBuffer(PerMesh& perMesh) override;
 
+	protected:
+		void bindShader() override;
+		void bindBuffers(PerMesh& perMesh) override;
+		void bindUniforms(sPtr<MaterialLit> material) override;
+		void updateInstanceBuffer(PerMaterialsSet& perMaterialSet) override;
+		void draw(const SubMesh& subMesh, PerMaterialsSet& perMaterialSet) override;
+
+	private:
 		bool m_isInitialized = false;
 
 		ShaderOpenGL m_shader;
 		std::vector<std::pair<PerMesh*, VAO>> m_buffers;
+		VAO* m_boundVAO;
 
 		struct MaterialUniform
 		{

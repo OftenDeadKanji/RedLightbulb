@@ -26,85 +26,6 @@ namespace RedLightbulb
 			m_isInitialized = false;
 		}
 	}
-	void LitShadingModelOpenGL::render(const Camera& camera)
-	{
-		LitShadingModel::render(camera);
-
-		m_shader.bind();
-
-		for (auto& perMesh : m_meshes)
-		{
-			VAO* vao{};
-			for (auto& buffer : m_buffers)
-			{
-				if (buffer.first == &perMesh)
-				{
-					vao = &buffer.second;
-					break;
-				}
-			}
-
-			vao->bind();
-
-			auto& subMeshes = perMesh.mesh->getSubMeshes();
-			int subMeshesCount = subMeshes.size();
-			for (int subMeshIndex = 0; subMeshIndex < subMeshesCount; subMeshIndex++)
-			{
-				const SubMesh& subMesh = subMeshes[subMeshIndex];
-				for (int perMaterialsSetIndex = 0; perMaterialsSetIndex < perMesh.perMaterialsSet.size(); perMaterialsSetIndex++)
-				{
-					const auto& perMaterialSet = perMesh.perMaterialsSet[perMaterialsSetIndex];
-					const auto& material = perMaterialSet.materials[subMeshIndex];
-
-					auto* baseColorTexture = sCast(TextureOpenGL*, material->baseColorTexture.get());
-					auto* normalTexture = sCast(TextureOpenGL*, material->normalTexture.get());
-					auto* ARMTexture = sCast(TextureOpenGL*, material->ARMTexture.get());
-
-
-					MaterialUniform uniform;
-
-					uniform.baseColor = material->baseColor;
-					if (baseColorTexture)
-					{
-						uniform.usesBaseColorTexture = true;
-						baseColorTexture->setToSlot(0, m_shader, "baseColorTexture");
-					}
-
-					if (normalTexture != nullptr)
-					{
-						uniform.usesNormalTexture = true;
-						normalTexture->setToSlot(1, m_shader, "normalTexture");
-					}
-
-					uniform.roughness = material->roughness;
-					uniform.usesRoughnessTexture = material->usesRoughnessTexture;
-
-					uniform.metallic = material->metallic;
-					uniform.usesMetallicTexture = material->usesMetallicTexture;
-
-					if (ARMTexture != nullptr)
-					{
-						ARMTexture->setToSlot(2, m_shader, "armTexture");
-					}
-
-					m_materialUBO.bind();
-					m_materialUBO.bufferData(&uniform, sizeof(uniform));
-					m_materialUBO.setToSlot(3);
-
-					vao->updateInstanceBuffer(perMaterialSet.instances.data(), sizeof(InstanceT) * perMaterialSet.instances.size());
-
-					if(vao->withIndicesAndInstances())
-					{
-						glDrawElementsInstanced(GL_TRIANGLES, subMesh.getIndicesCount(), GL_UNSIGNED_INT, (void*)(subMesh.getFirstIndexIndex() * sizeof(unsigned int)), perMaterialSet.instances.size());
-					}
-					else if (vao->withIndices())
-					{
-						glDrawElements(GL_TRIANGLES, subMesh.getIndicesCount(), GL_UNSIGNED_INT, (void*)(subMesh.getFirstIndexIndex() * sizeof(unsigned int)));
-					}
-				}
-			}
-		}
-	}
 
 	void LitShadingModelOpenGL::createBuffer(PerMesh& perMesh)
 	{
@@ -119,5 +40,70 @@ namespace RedLightbulb
 		auto& buffer = m_buffers.back().second;
 		buffer.create();
 		buffer.createP3TX2NM3TG3BT3IndexedInstancedBuffer(vertices, indices);
+	}
+	void LitShadingModelOpenGL::bindShader()
+	{
+		m_shader.bind();
+	}
+	void LitShadingModelOpenGL::bindBuffers(PerMesh& perMesh)
+	{
+		for (auto& buffer : m_buffers)
+		{
+			if (buffer.first == &perMesh)
+			{
+				buffer.second.bind();
+				m_boundVAO = &buffer.second;
+				break;
+			}
+		}
+	}
+
+	void LitShadingModelOpenGL::bindUniforms(sPtr<MaterialLit> material)
+	{
+		MaterialUniform uniform;
+
+		uniform.baseColor = material->baseColor;
+		if (material->baseColorTexture)
+		{
+			uniform.usesBaseColorTexture = true;
+			material->baseColorTexture->setToSlot(0, "baseColorTexture");
+		}
+
+		if (material->normalTexture != nullptr)
+		{
+			uniform.usesNormalTexture = true;
+			material->normalTexture->setToSlot(1, "normalTexture");
+		}
+
+		uniform.roughness = material->roughness;
+		uniform.usesRoughnessTexture = material->usesRoughnessTexture;
+
+		uniform.metallic = material->metallic;
+		uniform.usesMetallicTexture = material->usesMetallicTexture;
+
+		if (material->ARMTexture != nullptr)
+		{
+			material->ARMTexture->setToSlot(2, "armTexture");
+		}
+
+		m_materialUBO.bind();
+		m_materialUBO.bufferData(&uniform, sizeof(uniform));
+		m_materialUBO.setToSlot(3);
+	}
+	void LitShadingModelOpenGL::updateInstanceBuffer(PerMaterialsSet& perMaterialSet)
+	{
+		m_boundVAO->updateInstanceBuffer(perMaterialSet.instances.data(), sizeof(InstanceT) * perMaterialSet.instances.size());
+	}
+
+	void LitShadingModelOpenGL::draw(const SubMesh& subMesh, PerMaterialsSet& perMaterialSet)
+	{
+		if(m_boundVAO->withIndicesAndInstances())
+		{
+			glDrawElementsInstanced(GL_TRIANGLES, subMesh.getIndicesCount(), GL_UNSIGNED_INT, (void*)(subMesh.getFirstIndexIndex() * sizeof(unsigned int)), perMaterialSet.instances.size());
+		}
+		else if (m_boundVAO->withIndices())
+		{
+			glDrawElements(GL_TRIANGLES, subMesh.getIndicesCount(), GL_UNSIGNED_INT, (void*)(subMesh.getFirstIndexIndex() * sizeof(unsigned int)));
+		}
 	}
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include "../Material/Material.hpp"
+#include "Render/General/Instance/Instance.hpp"
 
 namespace RedLightbulb
 {
@@ -8,25 +9,19 @@ namespace RedLightbulb
 	class Camera;
 	struct Material;
 
-	template<class MaterialType, class InstanceType>
 	class ShadingModel
 	{
-		static_assert(std::is_base_of<Shader, ShaderType>::value, "ShaderType must derive from RedLightbulb::Shader");
-
 	public:
-		using MaterialT = MaterialType;
-		using InstanceT = InstanceType;
-		using ShaderT = ShaderType;
 
 		struct PerMaterialsSet
 		{
-			std::vector<sPtr<MaterialT>> materials;
-			std::vector<InstanceT> instances;
+			std::vector<rPtr<Material>> materials;
+			std::vector<uPtr<MeshInstance>> instances;
 		};
 
 		struct PerMesh
 		{
-			sPtr<Mesh> mesh{};
+			rPtr<Mesh> mesh;
 			std::vector<PerMaterialsSet> perMaterialsSet;
 		};
 
@@ -34,31 +29,63 @@ namespace RedLightbulb
 		virtual void create() = 0;
 		virtual void destroy() = 0;
 
-		void setDefaultMaterial(sPtr<MaterialT> material);
+		void setDefaultMaterial(rPtr<Material> material);
 
-		virtual void render(const Camera& camera) = 0;
+		void render(const Camera& camera);
 
-		virtual void addMesh(sPtr<Mesh> mesh, std::vector<sPtr<MaterialT>>& perSubMeshes, InstanceT instance);
+		virtual void addMesh(rPtr<Mesh>& mesh, std::vector<rPtr<Material>>& materials, const MeshInstance& instance);
 	protected:
 		virtual void createBuffer(PerMesh& perMesh) = 0;
-		virtual sPtr<MaterialT> castToAppropriateMaterial(sPtr<Material> material) = 0;
+		virtual sPtr<Material> castToAppropriateMaterial(sPtr<Material> material) = 0;
+
+		virtual void bindShader() = 0;
+		virtual void bindBuffers(PerMesh& perMesh) = 0;
+		virtual void bindUniforms(Material& material) = 0;
+		virtual void updateInstanceBuffer(const PerMaterialsSet& perMaterialSet) = 0;
+		virtual void draw(const SubMesh& subMesh, const PerMaterialsSet& perMaterialSet) = 0;
 
 		std::vector<PerMesh> m_meshes;
-		sPtr<MaterialT> m_defaultMaterial;
+		rPtr<Material> m_defaultMaterial;
 
 	};
 
-	template<class MaterialType, class InstanceType>
-	inline void ShadingModel<MaterialType, InstanceType>::setDefaultMaterial(sPtr<MaterialT> material)
+	inline void ShadingModel::setDefaultMaterial(rPtr<Material> material)
 	{
 		m_defaultMaterial = material;
 	}
 
-	template<class MaterialType, class InstanceType>
-	inline void ShadingModel<MaterialType, InstanceType>::addMesh(sPtr<Mesh> mesh, std::vector<sPtr<MaterialT>>& materials, InstanceT instance)
+	void ShadingModel::render(const Camera& camera)
 	{
-		auto materialsCount = mesh->getMaterials().size();
-		auto inMaterialsCount = materials.size();
+		bindShader();
+
+		for (PerMesh& perMesh : m_meshes)
+		{
+			bindBuffers(perMesh);
+
+			const std::vector<SubMesh>& subMeshes = perMesh.mesh->getSubMeshes();
+
+			int subMeshesCount = subMeshes.size();
+			for (int subMeshIndex = 0; subMeshIndex < subMeshesCount; subMeshIndex++)
+			{
+				const SubMesh& subMesh = subMeshes[subMeshIndex];
+
+				for (const PerMaterialsSet& perMaterialSet : perMesh.perMaterialsSet)
+				{
+					const rPtr<Material> material = perMaterialSet.materials[subMeshIndex];
+					bindUniforms(*material);
+
+					updateInstanceBuffer(perMaterialSet);
+
+					draw(subMesh, perMaterialSet);
+				}
+			}
+		}
+	}
+
+	inline void ShadingModel::addMesh(rPtr<Mesh>& mesh, std::vector<rPtr<Material>>& materials, const MeshInstance& instance)
+	{
+		int materialsCount = mesh->getMaterials().size();
+		int inMaterialsCount = materials.size();
 
 		if (inMaterialsCount > materialsCount)
 		{
@@ -78,19 +105,21 @@ namespace RedLightbulb
 			}
 		}
 
+		uPtr<MeshInstance> newInstance = std::make_unique<MeshInstance>(instance);
+
 		// do we already have this mesh?
-		for (auto& perMesh : m_meshes)
+		for (PerMesh& perMesh : m_meshes)
 		{
 			if (perMesh.mesh == mesh) // yes
 			{
-				for (auto& perMaterialSet : perMesh.perMaterialsSet)
+				for (PerMaterialsSet& perMaterialSet : perMesh.perMaterialsSet)
 				{
 					for (int i = 0; i < materialsCount; i++)
 					{
 						if (materials[i] == perMaterialSet.materials[i])
 						{
 							// we've found the same materials set - we can just add a new instance element
-							perMaterialSet.instances.push_back(instance);
+							perMaterialSet.instances.push_back(std::move(newInstance));
 
 							return;
 						}
@@ -100,7 +129,7 @@ namespace RedLightbulb
 				// we need to add a new materials set
 				PerMaterialsSet newPerMaterialsSet;
 				newPerMaterialsSet.materials = materials;
-				newPerMaterialsSet.instances.push_back(instance);
+				newPerMaterialsSet.instances.push_back(std::move(newInstance));
 
 				perMesh.perMaterialsSet.push_back(newPerMaterialsSet);
 
@@ -112,7 +141,7 @@ namespace RedLightbulb
 
 		PerMaterialsSet perMaterialSet;
 		perMaterialSet.materials = materials;
-		perMaterialSet.instances.push_back(instance);
+		perMaterialSet.instances.push_back(std::move(newInstance));
 
 		PerMesh perMeshToAdd;
 		perMeshToAdd.mesh = mesh;
